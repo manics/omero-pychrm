@@ -101,17 +101,21 @@ class TestPychrmStorage(unittest.TestCase):
         self.assertEqual(r[0], 'a b')
         self.assertEqual(r[1], 321)
 
-    def createFeatureName(self):
+    def test_createFeatureName(self):
         r = PychrmStorage.createFeatureName('a b', 321)
         self.assertEqual(r, 'a b [321]')
 
-    def featureSizes(self):
+    def test_insert_channel_name(self):
+        r = PychrmStorage.insert_channel_name('a (b ()) [3]', 'ch')
+        self.assertEqual(r, 'a (b (ch)) [3]')
+
+    def test_featureSizes(self):
         ftsz = PychrmStorage.featureSizes(['a b [12]', 'c d [3]', 'a b [14]'])
-        self.assertEqual(len(ftsz.keys), 2)
-        self.assertIn(ftsz, 'a b')
-        self.assertIn(ftsz, 'c d')
-        self.assertEqual(ftsz['a b'], 14)
-        self.assertEqual(ftsz['c d'], 3)
+        self.assertEqual(len(ftsz.keys()), 2)
+        self.assertIn('a b', ftsz)
+        self.assertIn('c d', ftsz)
+        self.assertEqual(ftsz['a b'], 15)
+        self.assertEqual(ftsz['c d'], 4)
 
 
 class FeatureTableHelper(ClientHelper):

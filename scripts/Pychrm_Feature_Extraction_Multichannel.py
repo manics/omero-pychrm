@@ -44,8 +44,7 @@ except: #pragma: nocover
         raise omero.ServerError('No PIL installed')
 
 
-def extractFeatures(ftb, ds, newOnly, chNames, imageId = None, im = None,
-                    prefixChannel = True):
+def extractFeatures(ftb, ds, newOnly, chNames, imageId = None, im = None):
     message = ''
     tc = ftb.tc
 
@@ -90,8 +89,8 @@ def extractFeatures(ftb, ds, newOnly, chNames, imageId = None, im = None,
                      # take ROIs etc. ... leave blank for now.
         ft = Signatures.NewFromFeatureComputationPlan( pychrm_matrix, feature_plan, options )  
 
-        if prefixChannel:
-            ft.names = ['[%s] %s' % (c, n) for n in ft.names]
+        ft.names = [PychrmStorage.insert_channel_name(
+                    n, chNames[c]) for n in ft.names]
         ft.source_path = im.getName()
         if not ftall:
             ftall = ft
@@ -146,7 +145,6 @@ def processImages(client, scriptParams):
     ids = scriptParams['IDs']
     contextName = scriptParams['Context_Name']
     newOnly = scriptParams['New_Images_Only']
-    prefixChannel = scriptParams['Prefix_Channel']
 
     tableName = '/Pychrm/' + contextName + '/SmallFeatureSet.h5'
     message += 'tableName:' + tableName + '\n'
@@ -172,15 +170,11 @@ def processImages(client, scriptParams):
                 'Channel check failed, ' +
                 'all images must have the same channels: %s' % message)
 
-        if not prefixChannel and len(chNames) != 1:
-            raise omero.ServerError(
-                'Multiple channels found, Prefix_Channel must be True')
         for d in datasets:
             message += 'Processing dataset id:%d\n' % d.getId()
             for image in d.listChildren():
                 message += 'Processing image id:%d\n' % image.getId()
-                msg = extractFeatures(ftb, d, newOnly, chNames, im=image,
-                                      prefixChannel=prefixChannel)
+                msg = extractFeatures(ftb, d, newOnly, chNames, im=image)
                 message += msg + '\n'
 
     except:
@@ -218,11 +212,6 @@ def runScript():
         scripts.Bool(
             'New_Images_Only', optional=False, grouping='3',
             description='If features already exist for an image do not recalculate.',
-            default=True),
-
-        scripts.Bool(
-            'Prefix_Channel', optional=False, grouping='4',
-            description='Prefix feature names with the channel name, must be true for multichannel images.',
             default=True),
 
         version = '0.0.1',

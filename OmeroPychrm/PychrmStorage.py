@@ -83,6 +83,16 @@ def createFeatureName(ft, idx):
     return name
 
 
+def insert_channel_name(ftname, cname):
+    """
+    Inserts a channel name into a raw feature name
+    """
+    if ftname.find('()') < 0:
+        raise PychrmStorageError(
+            'Expected \'()\' in raw feature name: %s' % ftname)
+    return ftname.replace('()', '(%s)' % cname)
+
+
 def featureSizes(names):
     """
     Convert a list of single value feature names to a dictionary of
