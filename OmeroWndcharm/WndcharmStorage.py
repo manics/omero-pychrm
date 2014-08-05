@@ -19,7 +19,7 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-# Handle saving and loading of features and classes between Pychrm and
+# Handle saving and loading of features and classes between Wndcharm and
 # OMERO.tables
 #
 # This has now expanded to do a lot more, and should be split up/renamed
@@ -38,9 +38,9 @@ from omero.rtypes import wrap, unwrap
 CLASSIFIER_PARENT_NAMESPACE = '/classifier'
 CLASSIFIER_LABEL_NAMESPACE = '/label'
 
-PYCHRM_NAMESPACE = '/pychrm'
-CLASSIFIER_PYCHRM_NAMESPACE = CLASSIFIER_PARENT_NAMESPACE + PYCHRM_NAMESPACE
-PYCHRM_VERSION_NAMESPACE = PYCHRM_NAMESPACE + '/version'
+WNDCHARM_NAMESPACE = '/wndcharm'
+CLASSIFIER_WNDCHARM_NAMESPACE = CLASSIFIER_PARENT_NAMESPACE + WNDCHARM_NAMESPACE
+WNDCHARM_VERSION_NAMESPACE = WNDCHARM_NAMESPACE + '/version'
 
 SMALLFEATURES_TABLE = '/SmallFeatureSet.h5'
 
@@ -56,9 +56,9 @@ CLASS_LABELS_TABLE = '/ClassLabels.h5'
 # Maximum number of rows to read/write in one go
 CHUNK_SIZE = 100
 
-class PychrmStorageError(Exception):
+class WndcharmStorageError(Exception):
     """
-    Errors occuring in the PychrmStorage module
+    Errors occuring in the WndcharmStorage module
     """
     pass
 
@@ -148,7 +148,7 @@ class FeatureTable(object):
         try:
             vertag = getVersion(self.conn, 'OriginalFile', tableId)
             if not vertag:
-                raise PychrmStorageError(
+                raise WndcharmStorageError(
                     'Table id %d has no version tag' % tableId)
             if version is not None:
                 assertVersionMatch(version, vertag, 'table:%d' % tableId)
@@ -277,7 +277,7 @@ class ClassifierTables(object):
             self.tcF.openTable(tidF)
             vertag = getVersion(self.tcF.conn, 'OriginalFile', self.tcF.tableId)
             if not vertag:
-                raise PychrmStorageError(
+                raise WndcharmStorageError(
                     'Table id %d has no version tag' % self.tcF.tableId)
 
             if version is not None:
@@ -393,7 +393,7 @@ class ClassifierTables(object):
 
 def getVersionAnnotation(conn, version):
     """
-    Get the Annotation object used to represent a particular PyChrm version,
+    Get the Annotation object used to represent a particular Wndcharm version,
     or None if not found
 
     TODO: Should we filter by user, since the owner of a TagAnnotation
@@ -403,7 +403,7 @@ def getVersionAnnotation(conn, version):
     qs = conn.getQueryService()
 
     p = omero.sys.ParametersI()
-    p.map['ns'] = wrap(PYCHRM_VERSION_NAMESPACE)
+    p.map['ns'] = wrap(WNDCHARM_VERSION_NAMESPACE)
     p.map['v'] = wrap(version)
     vtag = qs.findByQuery(
         'from TagAnnotation a where a.ns=:ns and a.textValue=:v', p)
@@ -413,13 +413,13 @@ def getVersionAnnotation(conn, version):
 
 def createVersionAnnotation(conn, version):
     """
-    Create the Annotation object used to represent a particular PyChrm version
+    Create the Annotation object used to represent a particular Wndcharm version
     """
     assert(getVersionAnnotation(conn, version) is None)
     us = conn.getUpdateService()
 
     tag = omero.model.TagAnnotationI()
-    tag.setNs(wrap(PYCHRM_VERSION_NAMESPACE))
+    tag.setNs(wrap(WNDCHARM_VERSION_NAMESPACE))
     tag.setTextValue(wrap(version))
     tag = us.saveAndReturnObject(tag)
     return tag
@@ -427,16 +427,16 @@ def createVersionAnnotation(conn, version):
 
 def getVersion(conn, objType, objId):
     """
-    Get the PyCHRM version associated with an object
+    Get the Wndcharm version associated with an object
     """
     obj = conn.getObject(objType, objId)
-    anns = list(obj.listAnnotations(PYCHRM_VERSION_NAMESPACE))
+    anns = list(obj.listAnnotations(WNDCHARM_VERSION_NAMESPACE))
     if len(anns) == 1:
         return anns[0]
     if not anns:
         return None
 
-    raise PychrmStorageError(
+    raise WndcharmStorageError(
         'Multiple versions attached to %s:%d' % (objType, objId))
 
 
@@ -446,9 +446,9 @@ def assertVersionMatch(requiredver, actualver, source=None):
     else:
         source = ''
     if requiredver is None:
-        raise PychrmStorageError('Required version must not be None')
+        raise WndcharmStorageError('Required version must not be None')
     if actualver is None:
-        raise PychrmStorageError('Version is None: "%s"%s' %
+        raise WndcharmStorageError('Version is None: "%s"%s' %
                                  (actualver, source))
 
     if not isinstance(requiredver, str):
@@ -456,7 +456,7 @@ def assertVersionMatch(requiredver, actualver, source=None):
     if not isinstance(actualver, str):
         actualver = actualver.getTextValue()
     if requiredver != actualver:
-        raise PychrmStorageError('Required version "%s", got version "%s"%s' %
+        raise WndcharmStorageError('Required version "%s", got version "%s"%s' %
                                  (requiredver, actualver, source))
 
 
@@ -480,15 +480,15 @@ def addFileAnnotationTo(tc, obj):
     oclass = obj.OMERO_CLASS
 
     obj = tc.conn.getObject(oclass, obj.getId())
-    for a in obj.listAnnotations(PYCHRM_NAMESPACE):
+    for a in obj.listAnnotations(WNDCHARM_NAMESPACE):
         if isinstance(a, omero.gateway.FileAnnotationWrapper):
             if tfile.getId() == unwrap(a._obj.getFile().getId()):
                 return 'Already attached'
 
     fa = omero.model.FileAnnotationI()
     fa.setFile(tfile._obj)
-    fa.setNs(wrap(PYCHRM_NAMESPACE))
-    fa.setDescription(wrap(PYCHRM_NAMESPACE + ':' + tfile.getName()))
+    fa.setNs(wrap(WNDCHARM_NAMESPACE))
+    fa.setDescription(wrap(WNDCHARM_NAMESPACE + ':' + tfile.getName()))
 
     objClass = getattr(omero.model, oclass + 'I')
     linkClass = getattr(omero.model, oclass + 'AnnotationLinkI')
@@ -508,7 +508,7 @@ def getAttachedTableFile(tc, obj):
     # annotations
     obj = tc.conn.getObject(obj.OMERO_CLASS, obj.getId())
 
-    for a in obj.listAnnotations(PYCHRM_NAMESPACE):
+    for a in obj.listAnnotations(WNDCHARM_NAMESPACE):
         if isinstance(a, omero.gateway.FileAnnotationWrapper):
             if tc.tableName == a.getFileName():
                 return a._obj.getFile().getId().getValue()
@@ -521,7 +521,7 @@ def addCommentTo(conn, comment, objType, objId):
     Add a comment to an object (dataset/project/image)
     """
     ca = omero.model.CommentAnnotationI()
-    ca.setNs(wrap(PYCHRM_NAMESPACE))
+    ca.setNs(wrap(WNDCHARM_NAMESPACE))
     ca.setTextValue(wrap(comment))
 
     objClass = getattr(omero.model, objType + 'I')
@@ -544,7 +544,7 @@ def addTextFileAnnotationTo(
 
     fa = omero.model.FileAnnotationI()
     fa.setFile(txtf._obj)
-    fa.setNs(wrap(PYCHRM_NAMESPACE))
+    fa.setNs(wrap(WNDCHARM_NAMESPACE))
     fa.setDescription(wrap(description))
 
     objClass = getattr(omero.model, objType + 'I')
@@ -624,7 +624,7 @@ def getClassifierTagSet(classifierName, instanceName, project):
     if not anns:
         return None
 
-    raise PychrmStorageError(
+    raise WndcharmStorageError(
         'Multiple tagsets attached to Project:%d' % project.getId())
 
 
