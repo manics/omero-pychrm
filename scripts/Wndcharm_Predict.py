@@ -27,15 +27,15 @@ from omero.rtypes import rstring, rlong, unwrap
 from datetime import datetime
 import numpy
 
-from OmeroPychrm import PychrmStorage
-import pychrm.FeatureSet
+from OmeroWndcharm import WndcharmStorage
+import wndcharm.FeatureSet
 
 
 
 def loadClassifier(ctb, project):
-    tidF = PychrmStorage.getAttachedTableFile(ctb.tcF, project)
-    tidW = PychrmStorage.getAttachedTableFile(ctb.tcW, project)
-    tidL = PychrmStorage.getAttachedTableFile(ctb.tcL, project)
+    tidF = WndcharmStorage.getAttachedTableFile(ctb.tcF, project)
+    tidW = WndcharmStorage.getAttachedTableFile(ctb.tcW, project)
+    tidL = WndcharmStorage.getAttachedTableFile(ctb.tcL, project)
 
     if tidF is None or tidW is None or tidL is None:
         raise Exception('Incomplete set of classifier tables: %s' %
@@ -47,7 +47,7 @@ def loadClassifier(ctb, project):
     cls = ctb.loadClassifierTables()
     #ids,trainClassIds,featureMatrix,featureNames,weights,classIds,classNames
 
-    trainFts = pychrm.FeatureSet.FeatureSet_Discrete()
+    trainFts = wndcharm.FeatureSet.FeatureSet_Discrete()
 
     #if cls['classIds'] != sorted(cls['classIds']):
     if cls['classIds'] != range(len(cls['classIds'])):
@@ -82,7 +82,7 @@ def loadClassifier(ctb, project):
     trainFts.imagenames_list = [str(i) for i in cls['ids']]
     tmp = trainFts.ContiguousDataMatrix()
 
-    weights = pychrm.FeatureSet.FisherFeatureWeights(
+    weights = wndcharm.FeatureSet.FisherFeatureWeights(
         data_dict={'names': cls['featureNames'], 'values': cls['weights']})
     return (trainFts, weights)
 
@@ -90,14 +90,14 @@ def loadClassifier(ctb, project):
 
 def predictDataset(ftb, trainFts, predDs, weights):
     message = ''
-    predictFts = pychrm.FeatureSet.FeatureSet_Discrete()
+    predictFts = wndcharm.FeatureSet.FeatureSet_Discrete()
     classId = 0
     message += addToFeatureSet(ftb, predDs, predictFts, classId)
     tmp = predictFts.ContiguousDataMatrix()
 
     predictFts = reduceFeatures(predictFts, weights)
 
-    pred = pychrm.FeatureSet.DiscreteBatchClassificationResult.New(
+    pred = wndcharm.FeatureSet.DiscreteBatchClassificationResult.New(
         trainFts, predictFts, weights)
     return pred, message
 
@@ -128,15 +128,15 @@ def addPredictionsToImages(conn, prediction, dsId, commentImages, tagSet):
         imId = long(r.source_file)
 
         if commentImages:
-            message += PychrmStorage.addCommentTo(conn, c, 'Image', imId)
+            message += WndcharmStorage.addCommentTo(conn, c, 'Image', imId)
         im = conn.getObject('Image', imId)
         dsComment += im.getName() + ' ' + c + '\n'
 
         if tagMap:
             tag = tagMap[r.predicted_class_name]._obj
-            message += PychrmStorage.addTagTo(conn, tag, 'Image', imId)
+            message += WndcharmStorage.addTagTo(conn, tag, 'Image', imId)
 
-    message += PychrmStorage.addCommentTo(conn, dsComment, 'Dataset', dsId)
+    message += WndcharmStorage.addCommentTo(conn, dsComment, 'Dataset', dsId)
     return message
 
 
@@ -150,7 +150,7 @@ def reduceFeatures(fts, weights):
 def addToFeatureSet(ftb, ds, fts, classId):
     message = ''
 
-    tid = PychrmStorage.getAttachedTableFile(ftb.tc, ds)
+    tid = WndcharmStorage.getAttachedTableFile(ftb.tc, ds)
     if tid:
         if not ftb.openTable(tid):
             return message + '\nERROR: Table not opened'
@@ -161,12 +161,12 @@ def addToFeatureSet(ftb, ds, fts, classId):
         return message
 
 
-    #fts = pychrm.FeatureSet.FeatureSet_Discrete({'num_images': 0})
+    #fts = wndcharm.FeatureSet.FeatureSet_Discrete({'num_images': 0})
     for image in ds.listChildren():
         imId = image.getId()
         message += '\tProcessing features for image id:%d\n' % imId
         #message += extractFeatures(tc, d, im = image) + '\n'
-        sig = pychrm.FeatureSet.Signatures()
+        sig = wndcharm.FeatureSet.Signatures()
         (sig.names, sig.values) = ftb.loadFeatures(imId)
         #sig.source_file = image.getName()
         sig.source_file = str(imId)
@@ -189,33 +189,33 @@ def predict(client, scriptParams):
 
     contextName = scriptParams['Context_Name']
 
-    tableNameIn = '/Pychrm/' + contextName + PychrmStorage.SMALLFEATURES_TABLE
-    tableNameF = '/Pychrm/' + contextName + \
-        PychrmStorage.CLASS_FEATURES_TABLE
-    tableNameW = '/Pychrm/' + contextName + \
-        PychrmStorage.CLASS_WEIGHTS_TABLE
-    tableNameL = '/Pychrm/' + contextName + \
-        PychrmStorage.CLASS_LABELS_TABLE
+    tableNameIn = '/Wndcharm/' + contextName + WndcharmStorage.SMALLFEATURES_TABLE
+    tableNameF = '/Wndcharm/' + contextName + \
+        WndcharmStorage.CLASS_FEATURES_TABLE
+    tableNameW = '/Wndcharm/' + contextName + \
+        WndcharmStorage.CLASS_WEIGHTS_TABLE
+    tableNameL = '/Wndcharm/' + contextName + \
+        WndcharmStorage.CLASS_LABELS_TABLE
     message += 'tableNameIn:' + tableNameIn + '\n'
     message += 'tableNameF:' + tableNameF + '\n'
     message += 'tableNameW:' + tableNameW + '\n'
     message += 'tableNameL:' + tableNameL + '\n'
 
-    ftb = PychrmStorage.FeatureTable(client, tableNameIn)
-    ctb = PychrmStorage.ClassifierTables(
+    ftb = WndcharmStorage.FeatureTable(client, tableNameIn)
+    ctb = WndcharmStorage.ClassifierTables(
         client, tableNameF, tableNameW, tableNameL)
 
     try:
         message += 'Loading classifier\n'
         trainProject = ftb.conn.getObject('Project', projectId)
         trainFts, weights = loadClassifier(ctb, trainProject)
-        classifierName = PychrmStorage.CLASSIFIER_PYCHRM_NAMESPACE
-        tagSet = PychrmStorage.getClassifierTagSet(
+        classifierName = WndcharmStorage.CLASSIFIER_WNDCHARM_NAMESPACE
+        tagSet = WndcharmStorage.getClassifierTagSet(
             classifierName, trainProject.getName(), trainProject)
 
         # Predict
         message += 'Predicting\n'
-        predDatasets = PychrmStorage.datasetGenerator(
+        predDatasets = WndcharmStorage.datasetGenerator(
             ftb.conn, dataType, predictIds)
 
         for ds in predDatasets:
@@ -241,7 +241,7 @@ def runScript():
     """
 
     client = scripts.client(
-        'Pychrm_Predict.py',
+        'Wndcharm_Predict.py',
         'Tag images based on their classification result',
 
         scripts.String('Data_Type', optional=False, grouping='1',

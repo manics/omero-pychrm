@@ -28,7 +28,7 @@ from omero.rtypes import rstring, rlong
 from datetime import datetime
 
 
-from OmeroPychrm import PychrmStorage
+from OmeroWndcharm import WndcharmStorage
 
 
 
@@ -37,7 +37,7 @@ def countCompleted(ftb, ds):
     tc = ftb.tc
 
     imIds = [im.getId() for im in ds.listChildren()]
-    tid = PychrmStorage.getAttachedTableFile(ftb.tc, ds)
+    tid = WndcharmStorage.getAttachedTableFile(ftb.tc, ds)
     if tid is None:
         message += 'Image feature status PRESENT:%d ABSENT:%d\n' % \
             (0, len(imIds))
@@ -65,9 +65,9 @@ def processImages(client, scriptParams):
     ids = scriptParams['IDs']
     contextName = scriptParams['Context_Name']
 
-    tableName = '/Pychrm/' + contextName + '/SmallFeatureSet.h5'
+    tableName = '/Wndcharm/' + contextName + '/SmallFeatureSet.h5'
     message += 'tableName:' + tableName + '\n'
-    ftb = PychrmStorage.FeatureTable(client, tableName)
+    ftb = WndcharmStorage.FeatureTable(client, tableName)
 
     try:
         # Get the datasets
@@ -77,7 +77,7 @@ def processImages(client, scriptParams):
         if not objects:
             return message
 
-        datasets = PychrmStorage.datasetGenerator(ftb.conn, dataType, ids)
+        datasets = WndcharmStorage.datasetGenerator(ftb.conn, dataType, ids)
         for ds in datasets:
             message += 'Processing dataset id:%d\n' % ds.getId()
             msg = countCompleted(ftb, ds)
@@ -98,8 +98,8 @@ def runScript():
     """
 
     client = scripts.client(
-        'Pychrm_Feature_Check_Progress.py',
-        'Extract the small Pychrm feature set from images',
+        'Wndcharm_Feature_Check_Progress.py',
+        'Extract the small Wndcharm feature set from images',
 
         scripts.String('Data_Type', optional=False, grouping='1',
                        description='The data you want to work with.',

@@ -28,8 +28,8 @@ from datetime import datetime
 from math import ceil
 from itertools import izip
 
-from OmeroPychrm import PychrmStorage
-import pychrm.FeatureSet
+from OmeroWndcharm import WndcharmStorage
+import wndcharm.FeatureSet
 
 
 
@@ -38,7 +38,7 @@ import pychrm.FeatureSet
 def createWeights(ftb, ctb, project, featureThreshold, imagesOnly):
     # Build the classifier (basically a set of weights)
     message = ''
-    trainFts = pychrm.FeatureSet.FeatureSet_Discrete()
+    trainFts = wndcharm.FeatureSet.FeatureSet_Discrete()
 
     classId = 0
     for ds in project.listChildren():
@@ -47,7 +47,7 @@ def createWeights(ftb, ctb, project, featureThreshold, imagesOnly):
         classId += 1
 
     tmp = trainFts.ContiguousDataMatrix()
-    weights = pychrm.FeatureSet.FisherFeatureWeights.NewFromFeatureSet(trainFts)
+    weights = wndcharm.FeatureSet.FisherFeatureWeights.NewFromFeatureSet(trainFts)
 
     if featureThreshold < 1.0:
         nFeatures = ceil(len(weights.names) * featureThreshold)
@@ -77,14 +77,14 @@ def createWeights(ftb, ctb, project, featureThreshold, imagesOnly):
     ctb.saveClassifierTables(ids, classIds, featureMatrix,
                              featureNames, featureWeights, classNames)
 
-    PychrmStorage.addFileAnnotationTo(ctb.tcF, project)
-    PychrmStorage.addFileAnnotationTo(ctb.tcW, project)
-    PychrmStorage.addFileAnnotationTo(ctb.tcL, project)
+    WndcharmStorage.addFileAnnotationTo(ctb.tcF, project)
+    WndcharmStorage.addFileAnnotationTo(ctb.tcW, project)
+    WndcharmStorage.addFileAnnotationTo(ctb.tcL, project)
 
     message += 'Saved classifier\n'
 
-    classifierName = PychrmStorage.CLASSIFIER_PYCHRM_NAMESPACE
-    ns = PychrmStorage.createClassifierTagSet(
+    classifierName = WndcharmStorage.CLASSIFIER_WNDCHARM_NAMESPACE
+    ns = WndcharmStorage.createClassifierTagSet(
         ctb.tcL.conn, classifierName, project.getName(), classNames, project)
     message += 'Created tagset: %s\n' % ns
 
@@ -101,7 +101,7 @@ def reduceFeatures(fts, weights):
 def addToFeatureSet(ftb, ds, fts, classId, imagesOnly):
     message = ''
 
-    tid = PychrmStorage.getAttachedTableFile(ftb.tc, ds)
+    tid = WndcharmStorage.getAttachedTableFile(ftb.tc, ds)
     if tid:
         if not ftb.openTable(tid):
             return message + '\nERROR: Table not opened'
@@ -111,13 +111,13 @@ def addToFeatureSet(ftb, ds, fts, classId, imagesOnly):
         message += 'ERROR: Table not found for Dataset id:%d' % ds.getId()
         return message
 
-    #fts = pychrm.FeatureSet.FeatureSet_Discrete({'num_images': 0})
+    #fts = wndcharm.FeatureSet.FeatureSet_Discrete({'num_images': 0})
     if imagesOnly:
         for image in ds.listChildren():
             imId = image.getId()
             message += '\tProcessing features for image id:%d\n' % imId
 
-            sig = pychrm.FeatureSet.Signatures()
+            sig = wndcharm.FeatureSet.Signatures()
             (sig.names, sig.values) = ftb.loadFeatures(imId)
             sig.source_file = str(imId)
             sig.version = version
@@ -128,7 +128,7 @@ def addToFeatureSet(ftb, ds, fts, classId, imagesOnly):
         message += '\tProcessing all features for dataset id:%d\n' % ds.getId()
 
         for imId, vals in izip(ids, values):
-            sig = pychrm.FeatureSet.Signatures()
+            sig = wndcharm.FeatureSet.Signatures()
             sig.names = names
             sig.values = vals
             sig.source_file = str(imId)
@@ -154,20 +154,20 @@ def trainClassifier(client, scriptParams):
 
     projectId = projectId[0]
 
-    tableNameIn = '/Pychrm/' + contextName + PychrmStorage.SMALLFEATURES_TABLE
-    tableNameOutF = '/Pychrm/' + contextName + \
-        PychrmStorage.CLASS_FEATURES_TABLE
-    tableNameOutW = '/Pychrm/' + contextName + \
-        PychrmStorage.CLASS_WEIGHTS_TABLE
-    tableNameOutL = '/Pychrm/' + contextName + \
-        PychrmStorage.CLASS_LABELS_TABLE
+    tableNameIn = '/Wndcharm/' + contextName + WndcharmStorage.SMALLFEATURES_TABLE
+    tableNameOutF = '/Wndcharm/' + contextName + \
+        WndcharmStorage.CLASS_FEATURES_TABLE
+    tableNameOutW = '/Wndcharm/' + contextName + \
+        WndcharmStorage.CLASS_WEIGHTS_TABLE
+    tableNameOutL = '/Wndcharm/' + contextName + \
+        WndcharmStorage.CLASS_LABELS_TABLE
     message += 'tableNameIn:' + tableNameIn + '\n'
     message += 'tableNameOutF:' + tableNameOutF + '\n'
     message += 'tableNameOutW:' + tableNameOutW + '\n'
     message += 'tableNameOutL:' + tableNameOutL + '\n'
 
-    ftb = PychrmStorage.FeatureTable(client, tableNameIn)
-    ctb = PychrmStorage.ClassifierTables(
+    ftb = WndcharmStorage.FeatureTable(client, tableNameIn)
+    ctb = WndcharmStorage.ClassifierTables(
         client, tableNameOutF, tableNameOutW, tableNameOutL)
 
     try:
@@ -194,7 +194,7 @@ def runScript():
     """
 
     client = scripts.client(
-        'Pychrm_Build_Classifier.py',
+        'Wndcharm_Build_Classifier.py',
         'Build a classifier from features calculated over two or more ' +
         'datasets in a project, each dataset represents a different class',
 

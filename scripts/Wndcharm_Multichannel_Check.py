@@ -86,7 +86,7 @@ def runScript():
     """
 
     client = scripts.client(
-        'Pychrm_Multichannel_Check.py',
+        'Wndcharm_Multichannel_Check.py',
         'Check all images in selected datasetes have the same channel names',
 
         scripts.String('Data_Type', optional=False, grouping='1',

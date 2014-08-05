@@ -29,7 +29,7 @@ from omero.gateway import FileAnnotationWrapper, CommentAnnotationWrapper
 import omero
 from datetime import datetime
 
-from OmeroPychrm import PychrmStorage
+from OmeroWndcharm import WndcharmStorage
 
 
 def deleteObjects(conn, objType, ids):
@@ -42,17 +42,17 @@ def deleteObjects(conn, objType, ids):
 
 def removeAnnotations(conn, obj, rmTables, rmComments, unlinkTags, rmTagsets):
     """
-    Remove annotations that are in one of the PyChrm namespaces
+    Remove annotations that are in one of the Wndcharm namespaces
     """
     message = ''
 
     rmIds = []
     for ann in obj.listAnnotations():
-        if ann.getNs() == PychrmStorage.PYCHRM_NAMESPACE:
+        if ann.getNs() == WndcharmStorage.WNDCHARM_NAMESPACE:
             if rmTables and isinstance(ann, FileAnnotationWrapper):
                 # Need to remove version annotation on the OriginalFile
                 # otherwise delete will fail
-                PychrmStorage.unlinkAnnotations(conn, ann.getFile())
+                WndcharmStorage.unlinkAnnotations(conn, ann.getFile())
                 message += ('Checking for annotations on file id:%d\n' %
                             ann.getFile().getId())
                 rmIds.append(ann.getId())
@@ -93,7 +93,7 @@ def removeTagAnnotations(conn, obj):
     params = omero.sys.Parameters()
     params.map = {
         'parentid': wrap(obj.getId()),
-        'ns': wrap(PychrmStorage.CLASSIFIER_PYCHRM_NAMESPACE + '/%')
+        'ns': wrap(WndcharmStorage.CLASSIFIER_WNDCHARM_NAMESPACE + '/%')
         }
     anns = conn.getQueryService().findAllByQuery(q, params)
 
@@ -116,7 +116,7 @@ def removeTags(conn, obj):
     Delete classifier tagsets attached to a project
 
     Note it is not possible to set a namespace for tagsets, so we rely on the
-    tag value beginning with PychrmStorage.CLASSIFIER_PYCHRM_NAMESPACE
+    tag value beginning with WndcharmStorage.CLASSIFIER_WNDCHARM_NAMESPACE
     """
     if obj.OMERO_CLASS != 'Project':
         return ''
@@ -128,7 +128,7 @@ def removeTags(conn, obj):
     params = omero.sys.ParametersI()
     params.addLong('parentid', obj.getId())
     params.addString('ns', omero.constants.metadata.NSINSIGHTTAGSET)
-    params.addString('value', PychrmStorage.CLASSIFIER_PYCHRM_NAMESPACE + '/%')
+    params.addString('value', WndcharmStorage.CLASSIFIER_WNDCHARM_NAMESPACE + '/%')
     anns = conn.getQueryService().findAllByQuery(q, params)
 
     rmTagsets = [unwrap(ann.getChild().getId()) for ann in anns]
@@ -140,7 +140,7 @@ def removeTags(conn, obj):
             'oal.child.ns like :ns'
         params = omero.sys.ParametersI()
         params.addLongs('parentids', rmTagsets)
-        params.addString('ns', PychrmStorage.CLASSIFIER_PYCHRM_NAMESPACE + '/%')
+        params.addString('ns', WndcharmStorage.CLASSIFIER_WNDCHARM_NAMESPACE + '/%')
         anns = conn.getQueryService().findAllByQuery(q, params)
 
         rmTags = [unwrap(ann.getChild().getId()) for ann in anns]
@@ -186,8 +186,8 @@ def runScript():
 
     dataTypes = [rstring('Project'), rstring('Dataset'), rstring('Image')]
     client = scripts.client(
-        'Pychrm_Remove_Annotations.py',
-        'Remove Pychrm annotations from Datasets and contained Images, or just Images',
+        'Wndcharm_Remove_Annotations.py',
+        'Remove Wndcharm annotations from Datasets and contained Images, or just Images',
 
         scripts.String('Data_Type', optional=False, grouping='1',
                        description='The data you want to work with.',

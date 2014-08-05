@@ -29,9 +29,9 @@ from math import ceil
 from itertools import izip
 from StringIO import StringIO
 
-from OmeroPychrm import PychrmStorage
+from OmeroWndcharm import WndcharmStorage
 
-from pychrm.FeatureSet import DiscreteClassificationExperimentResult, \
+from wndcharm.FeatureSet import DiscreteClassificationExperimentResult, \
     DiscreteBatchClassificationResult, FeatureSet_Discrete, \
     FisherFeatureWeights, Signatures
 
@@ -74,10 +74,10 @@ def crossValidate(ftb, project, featureThreshold, imagesOnly, numSplits):
     experiment.PerSampleStatistics(output_stream=out)
 
     pid = project.getId()
-    PychrmStorage.addTextFileAnnotationTo(
+    WndcharmStorage.addTextFileAnnotationTo(
         ftb.conn, out.getvalue(), 'Project', pid,
-        'Pychrm_Cross_Validation_Results.txt',
-        'Pychrm Cross Validation Results for Project:%d' % pid)
+        'Wndcharm_Cross_Validation_Results.txt',
+        'Wndcharm Cross Validation Results for Project:%d' % pid)
 
     message += 'Attached cross-validation results\n'
     #return experiment
@@ -94,7 +94,7 @@ def reduceFeatures(fts, weights):
 def addToFeatureSet(ftb, ds, fts, classId, imagesOnly):
     message = ''
 
-    tid = PychrmStorage.getAttachedTableFile(ftb.tc, ds)
+    tid = WndcharmStorage.getAttachedTableFile(ftb.tc, ds)
     if tid:
         if not ftb.openTable(tid):
             return message + '\nERROR: Table not opened'
@@ -147,10 +147,10 @@ def runCrossValidate(client, scriptParams):
 
     projectId = projectId[0]
 
-    tableNameIn = '/Pychrm/' + contextName + PychrmStorage.SMALLFEATURES_TABLE
+    tableNameIn = '/Wndcharm/' + contextName + WndcharmStorage.SMALLFEATURES_TABLE
     message += 'tableNameIn:' + tableNameIn + '\n'
 
-    ftb = PychrmStorage.FeatureTable(client, tableNameIn)
+    ftb = WndcharmStorage.FeatureTable(client, tableNameIn)
 
     try:
         message += 'Running cross-validation\n'
@@ -174,7 +174,7 @@ def runScript():
     """
 
     client = scripts.client(
-        'Pychrm_Cross_Validation.py',
+        'Wndcharm_Cross_Validation.py',
         'Run multiple cross-validation iterations',
 
         scripts.String('Data_Type', optional=False, grouping='1',

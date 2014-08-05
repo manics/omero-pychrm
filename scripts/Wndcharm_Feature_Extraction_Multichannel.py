@@ -30,10 +30,10 @@ from itertools import izip
 from tempfile import NamedTemporaryFile
 
 
-import pychrm
-from pychrm.FeatureSet import Signatures
-from pychrm.PyImageMatrix import PyImageMatrix
-from OmeroPychrm import PychrmStorage
+import wndcharm
+from wndcharm.FeatureSet import Signatures
+from wndcharm.PyImageMatrix import PyImageMatrix
+from OmeroWndcharm import WndcharmStorage
 
 try:
     from PIL import Image, ImageDraw, ImageFont     # see ticket:2597
@@ -62,7 +62,7 @@ def extractFeatures(ftb, ds, newOnly, chNames, imageId = None, im = None,
     else:
         imageId = im.getId()
 
-    tid = PychrmStorage.getAttachedTableFile(ftb.tc, ds)
+    tid = WndcharmStorage.getAttachedTableFile(ftb.tc, ds)
     if tid:
         if not ftb.openTable(tid):
             return message + '\nERROR: Table not opened\n'
@@ -80,15 +80,15 @@ def extractFeatures(ftb, ds, newOnly, chNames, imageId = None, im = None,
     ftall = None
     for c in xrange( len( chNames ) ):
 	    
-        pychrm_matrix = PyImageMatrix()
-        pychrm_matrix.allocate( im.getSizeX(), im.getSizeY() )
-        numpy_matrix = pychrm_matrix.as_ndarray()
+        wndcharm_matrix = PyImageMatrix()
+        wndcharm_matrix.allocate( im.getSizeX(), im.getSizeY() )
+        numpy_matrix = wndcharm_matrix.as_ndarray()
 
         numpy_matrix[:] = im.getPrimaryPixels().getPlane(theZ=0,theC=c,theT=0)
-        feature_plan = pychrm.StdFeatureComputationPlans.getFeatureSet();
+        feature_plan = wndcharm.StdFeatureComputationPlans.getFeatureSet();
         options = "" # This is where you can tell wnd-charm to normalize pixel intensities, 
                      # take ROIs etc. ... leave blank for now.
-        ft = Signatures.NewFromFeatureComputationPlan( pychrm_matrix, feature_plan, options )  
+        ft = Signatures.NewFromFeatureComputationPlan( wndcharm_matrix, feature_plan, options )
 
         if prefixChannel:
             ft.names = ['[%s] %s' % (c, n) for n in ft.names]
@@ -105,7 +105,7 @@ def extractFeatures(ftb, ds, newOnly, chNames, imageId = None, im = None,
         version = unwrap(ftb.versiontag.getTextValue())
         message += 'Created new table id:%d version:%s\n' % (
             ftb.tc.tableId, version)
-        message += PychrmStorage.addFileAnnotationTo(tc, ds)
+        message += WndcharmStorage.addFileAnnotationTo(tc, ds)
 
     if version != ft.version:
         return message + 'Incompatible version: Stored=%s Calculated=%s' % (
@@ -148,9 +148,9 @@ def processImages(client, scriptParams):
     newOnly = scriptParams['New_Images_Only']
     prefixChannel = scriptParams['Prefix_Channel']
 
-    tableName = '/Pychrm/' + contextName + '/SmallFeatureSet.h5'
+    tableName = '/Wndcharm/' + contextName + '/SmallFeatureSet.h5'
     message += 'tableName:' + tableName + '\n'
-    ftb = PychrmStorage.FeatureTable(client, tableName)
+    ftb = WndcharmStorage.FeatureTable(client, tableName)
 
     try:
         nimages = 0
@@ -162,7 +162,7 @@ def processImages(client, scriptParams):
         if not objects:
             return message
 
-        datasets = list(PychrmStorage.datasetGenerator(
+        datasets = list(WndcharmStorage.datasetGenerator(
                 ftb.conn, dataType, ids))
 
         good, chNames, msg = checkChannels(datasets)
@@ -198,8 +198,8 @@ def runScript():
     """
 
     client = scripts.client(
-        'Pychrm_Feature_Extraction_Multichannel.py',
-        'Extract the small Pychrm feature set from images',
+        'Wndcharm_Feature_Extraction_Multichannel.py',
+        'Extract the small Wndcharm feature set from images',
 
         scripts.String('Data_Type', optional=False, grouping='1',
                        description='The data you want to work with.',
