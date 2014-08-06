@@ -32,11 +32,11 @@ import uuid
 import omero
 from omero.rtypes import wrap, unwrap
 import os
-sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'OmeroPychrm'))
+sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'OmeroWndcharm'))
 sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'scripts'))
 
-import PychrmStorage
-from PychrmStorage import FeatureTable, ClassifierTables
+import WndcharmStorage
+from WndcharmStorage import FeatureTable, ClassifierTables
 
 
 class ClientHelper(unittest.TestCase):
@@ -52,7 +52,7 @@ class ClientHelper(unittest.TestCase):
         ICE_CONFIG must be set.
         """
         self.cli, self.sess = self.create_client()
-        self.tableName = '/test_PychrmStorage/test.h5'
+        self.tableName = '/test_WndcharmStorage/test.h5'
         self.conn = omero.gateway.BlitzGateway(client_obj=self.cli)
 
     def tearDown(self):
@@ -93,20 +93,20 @@ class TestFeatures(object):
         self.values = map(lambda x: x + inc, [10., 11., 12.])
 
 
-class TestPychrmStorage(unittest.TestCase):
+class TestWndcharmStorage(unittest.TestCase):
 
     def test_parseFeatureName(self):
-        r = PychrmStorage.parseFeatureName('a b [321]')
+        r = WndcharmStorage.parseFeatureName('a b [321]')
         self.assertEqual(len(r), 2)
         self.assertEqual(r[0], 'a b')
         self.assertEqual(r[1], 321)
 
     def createFeatureName(self):
-        r = PychrmStorage.createFeatureName('a b', 321)
+        r = WndcharmStorage.createFeatureName('a b', 321)
         self.assertEqual(r, 'a b [321]')
 
     def featureSizes(self):
-        ftsz = PychrmStorage.featureSizes(['a b [12]', 'c d [3]', 'a b [14]'])
+        ftsz = WndcharmStorage.featureSizes(['a b [12]', 'c d [3]', 'a b [14]'])
         self.assertEqual(len(ftsz.keys), 2)
         self.assertIn(ftsz, 'a b')
         self.assertIn(ftsz, 'c d')
@@ -179,7 +179,7 @@ class TestFeatureTable(FeatureTableHelper):
         ft.openTable(tid)
         self.assertEqual(self.version, unwrapVersion(ft.versiontag))
 
-        vertag = PychrmStorage.getVersion(ft.conn, 'OriginalFile', tid)
+        vertag = WndcharmStorage.getVersion(ft.conn, 'OriginalFile', tid)
         self.assertEqual(self.version, unwrapVersion(vertag))
 
         headers = ft.tc.getHeaders()
@@ -201,7 +201,7 @@ class TestFeatureTable(FeatureTableHelper):
 
         self.assertEqual(self.version, unwrapVersion(ft.versiontag))
 
-        vertag = PychrmStorage.getVersion(ft.conn, 'OriginalFile', tid)
+        vertag = WndcharmStorage.getVersion(ft.conn, 'OriginalFile', tid)
         self.assertEqual(self.version, unwrapVersion(vertag))
 
         p = omero.model.ProjectI()
@@ -209,9 +209,9 @@ class TestFeatureTable(FeatureTableHelper):
         p = self.sess.getUpdateService().saveAndReturnObject(p)
         pid = unwrap(p.getId())
         p = ft.conn.getObject('Project', pid)
-        PychrmStorage.addFileAnnotationTo(ft.tc, p)
+        WndcharmStorage.addFileAnnotationTo(ft.tc, p)
 
-        vertag = PychrmStorage.getVersion(ft.conn, 'OriginalFile', tid)
+        vertag = WndcharmStorage.getVersion(ft.conn, 'OriginalFile', tid)
         self.assertEqual(self.version, unwrapVersion(vertag))
         self.delete('/Project', pid)
         self.delete('/OriginalFile', tid)
@@ -227,7 +227,7 @@ class TestFeatureTable(FeatureTableHelper):
 
         ft = FeatureTable(client=self.cli, tableName=self.tableName)
         self.assertRaises(
-            PychrmStorage.PychrmStorageError, ft.openTable,
+            WndcharmStorage.WndcharmStorageError, ft.openTable,
             tid, self.otherversion)
 
     def test_isTableCompatible(self):
@@ -288,9 +288,9 @@ class TestClassifierTables(FeatureTableHelper):
 
     def setUp(self):
         super(TestClassifierTables, self).setUp()
-        self.tableNameF = '/test_PychrmStorage/ClassFeatures.h5'
-        self.tableNameW = '/test_PychrmStorage/Weights.h5'
-        self.tableNameL = '/test_PychrmStorage/ClassLabels.h5'
+        self.tableNameF = '/test_WndcharmStorage/ClassFeatures.h5'
+        self.tableNameW = '/test_WndcharmStorage/Weights.h5'
+        self.tableNameL = '/test_WndcharmStorage/ClassLabels.h5'
 
     def create_classifierTables(self):
         cli, sess = self.create_client()
@@ -312,15 +312,15 @@ class TestClassifierTables(FeatureTableHelper):
     def checkClassifierTablesVersion(self, ct):
         self.assertEqual(unwrapVersion(ct.versiontag), self.version)
 
-        verF = PychrmStorage.getVersion(
+        verF = WndcharmStorage.getVersion(
             ct.tcF.conn, 'OriginalFile', ct.tcF.tableId)
         self.assertEqual(unwrapVersion(verF), self.version)
 
-        verW = PychrmStorage.getVersion(
+        verW = WndcharmStorage.getVersion(
             ct.tcW.conn, 'OriginalFile', ct.tcW.tableId)
         self.assertEqual(unwrapVersion(verW), self.version)
 
-        verL = PychrmStorage.getVersion(
+        verL = WndcharmStorage.getVersion(
             ct.tcL.conn, 'OriginalFile', ct.tcL.tableId)
         self.assertEqual(unwrapVersion(verL), self.version)
 
@@ -340,7 +340,7 @@ class TestClassifierTables(FeatureTableHelper):
 
         ct = self.create_classifierTables()
         self.assertRaises(
-            PychrmStorage.PychrmStorageError, ct.openTables, tidF, tidW, tidL,
+            WndcharmStorage.WndcharmStorageError, ct.openTables, tidF, tidW, tidL,
             self.otherversion)
 
     def test_createClassifierTables(self):
@@ -457,14 +457,14 @@ class TestAnnotations(ClientHelper):
         tableid = self.create_table()
         file = omero.model.OriginalFileI(tableid, False)
         version = str(uuid.uuid1())
-        tagid = self.create_tag(version, PychrmStorage.PYCHRM_VERSION_NAMESPACE)
+        tagid = self.create_tag(version, WndcharmStorage.WNDCHARM_VERSION_NAMESPACE)
         tag = omero.model.TagAnnotationI(tagid, False)
         link = omero.model.OriginalFileAnnotationLinkI()
         link.setChild(tag)
         link.setParent(file)
         link = self.sess.getUpdateService().saveAndReturnObject(link)
 
-        retrieved = PychrmStorage.getVersion(
+        retrieved = WndcharmStorage.getVersion(
             self.conn, 'OriginalFile', unwrap(file.getId()))
         self.assertEqual(unwrapVersion(retrieved), version)
 
@@ -473,23 +473,23 @@ class TestAnnotations(ClientHelper):
     #def test_getVersion(self):
     def test_versionAnnotation(self):
         version = str(uuid.uuid1())
-        created = PychrmStorage.createVersionAnnotation(self.conn, version)
-        retrieved = PychrmStorage.getVersionAnnotation(self.conn, version)
+        created = WndcharmStorage.createVersionAnnotation(self.conn, version)
+        retrieved = WndcharmStorage.getVersionAnnotation(self.conn, version)
 
         self.assertEqual(unwrap(created.getNs()),
-                         PychrmStorage.PYCHRM_VERSION_NAMESPACE)
+                         WndcharmStorage.WNDCHARM_VERSION_NAMESPACE)
         self.assertEqual(unwrapVersion(created), version)
         self.assertEqual(unwrap(retrieved.getNs()),
-                         PychrmStorage.PYCHRM_VERSION_NAMESPACE)
+                         WndcharmStorage.WNDCHARM_VERSION_NAMESPACE)
         self.assertEqual(unwrapVersion(retrieved), version)
 
         pid = self.create_project('versionAnnotation')
-        self.assertIsNone(PychrmStorage.getVersion(self.conn, 'Project', pid))
+        self.assertIsNone(WndcharmStorage.getVersion(self.conn, 'Project', pid))
 
-        PychrmStorage.addTagTo(self.conn, retrieved, 'Project', pid)
-        a = PychrmStorage.getVersion(self.conn, 'Project', pid)
+        WndcharmStorage.addTagTo(self.conn, retrieved, 'Project', pid)
+        a = WndcharmStorage.getVersion(self.conn, 'Project', pid)
         self.assertEqual(unwrap(a.getNs()),
-                         PychrmStorage.PYCHRM_VERSION_NAMESPACE)
+                         WndcharmStorage.WNDCHARM_VERSION_NAMESPACE)
         self.assertEqual(unwrapVersion(a), version)
 
         self.delete('/Project', pid)
@@ -507,11 +507,11 @@ class TestAnnotations(ClientHelper):
         v2 = MockVersion('12.345')
         v3 = MockVersion('543.21')
 
-        PychrmStorage.assertVersionMatch(v1, v2)
-        PychrmStorage.assertVersionMatch(v1, v2.getTextValue())
-        PychrmStorage.assertVersionMatch(v1.getTextValue(), v2)
+        WndcharmStorage.assertVersionMatch(v1, v2)
+        WndcharmStorage.assertVersionMatch(v1, v2.getTextValue())
+        WndcharmStorage.assertVersionMatch(v1.getTextValue(), v2)
         self.assertRaises(
-            PychrmStorage.PychrmStorageError, PychrmStorage.assertVersionMatch,
+            WndcharmStorage.WndcharmStorageError, WndcharmStorage.assertVersionMatch,
             v1, v3)
 
     def test_addFileAnnotationTo(self):
@@ -519,7 +519,7 @@ class TestAnnotations(ClientHelper):
         p = self.conn.getObject('Project', pid)
         tc = self.Tc(self.conn)
         fid = unwrap(tc.table.getOriginalFile().getId())
-        PychrmStorage.addFileAnnotationTo(tc, p)
+        WndcharmStorage.addFileAnnotationTo(tc, p)
 
         proj = self.conn.getObject('Project', pid)
         a = proj.getAnnotation()
@@ -535,10 +535,10 @@ class TestAnnotations(ClientHelper):
         tc = self.Tc(self.conn)
         fid = unwrap(tc.table.getOriginalFile().getId())
 
-        self.assertIsNone(PychrmStorage.getAttachedTableFile(tc, p))
+        self.assertIsNone(WndcharmStorage.getAttachedTableFile(tc, p))
 
-        PychrmStorage.addFileAnnotationTo(tc, p)
-        self.assertIsNotNone(PychrmStorage.getAttachedTableFile(tc, p))
+        WndcharmStorage.addFileAnnotationTo(tc, p)
+        self.assertIsNotNone(WndcharmStorage.getAttachedTableFile(tc, p))
 
         tc.close()
         self.delete('/Project', pid)
@@ -546,7 +546,7 @@ class TestAnnotations(ClientHelper):
     def test_addCommentTo(self):
         pid = self.create_project('addCommentTo')
         txt = 'This is a comment'
-        PychrmStorage.addCommentTo(self.conn, txt, 'Project', pid)
+        WndcharmStorage.addCommentTo(self.conn, txt, 'Project', pid)
 
         proj = self.conn.getObject('Project', pid)
         a = proj.getAnnotation()
@@ -560,7 +560,7 @@ class TestAnnotations(ClientHelper):
         txt = 'This is\nsome text.'
         filename = 'addTextFileAnnotationTo.txt'
         description = 'Description of addTextFileAnnotationTo.txt'
-        PychrmStorage.addTextFileAnnotationTo(
+        WndcharmStorage.addTextFileAnnotationTo(
             self.conn, txt, 'Project', pid, filename, description)
 
         p = self.conn.getObject('Project', pid)
@@ -581,7 +581,7 @@ class TestAnnotations(ClientHelper):
         txt = 'This is a tag'
         tid = self.create_tag(txt)
         tag = omero.model.TagAnnotationI(tid, False)
-        PychrmStorage.addTagTo(self.conn, tag, 'Project', pid)
+        WndcharmStorage.addTagTo(self.conn, tag, 'Project', pid)
 
         proj = self.conn.getObject('Project', pid)
         a = proj.getAnnotation()
@@ -596,7 +596,7 @@ class TestAnnotations(ClientHelper):
         classifierName = 'createClassifierTagSet'
         instanceName = str(uuid.uuid1())
         labels = ['A', 'B']
-        PychrmStorage.createClassifierTagSet(
+        WndcharmStorage.createClassifierTagSet(
             self.conn, classifierName, instanceName, labels)
 
         tagset = list(self.conn.getObjects('TagAnnotation', attributes={
@@ -623,10 +623,10 @@ class TestAnnotations(ClientHelper):
         classifierName = 'getClassifierTagSet'
         instanceName = str(uuid.uuid1())
         labels = ['A', 'B']
-        PychrmStorage.createClassifierTagSet(
+        WndcharmStorage.createClassifierTagSet(
             self.conn, classifierName, instanceName, labels, p)
 
-        tagset = PychrmStorage.getClassifierTagSet(
+        tagset = WndcharmStorage.getClassifierTagSet(
             classifierName, instanceName, p)
         self.assertIsNotNone(tagset)
         self.assertEqual(tagset.getNs(),
@@ -671,7 +671,7 @@ class TestAnnotations(ClientHelper):
         self.assertIsNotNone(self.getObject(
                 'AnnotationAnnotationLink', link.id))
 
-        PychrmStorage.deleteTags(self.conn, tagSet)
+        WndcharmStorage.deleteTags(self.conn, tagSet)
 
         self.assertIsNone(self.getObject('TagAnnotation', tagSet.id))
         self.assertIsNone(self.getObject('TagAnnotation', tag.id))
@@ -701,7 +701,7 @@ class TestAnnotations(ClientHelper):
                 'OriginalFileAnnotationLink', link.id))
 
         file = self.conn.getObject('OriginalFile', unwrap(f.id))
-        PychrmStorage.unlinkAnnotations(self.conn, file)
+        WndcharmStorage.unlinkAnnotations(self.conn, file)
 
         self.assertIsNotNone(self.getObject('TagAnnotation', tag.id))
         self.assertIsNotNone(self.getObject('OriginalFile', file.id))
@@ -713,7 +713,7 @@ class TestAnnotations(ClientHelper):
 
     @unittest.skip("TODO: Implement")
     def test_datasetGenerator(self):
-        PychrmStorage.datasetGenerator(conn, dataType, ids)
+        WndcharmStorage.datasetGenerator(conn, dataType, ids)
 
 
 

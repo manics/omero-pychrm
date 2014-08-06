@@ -32,7 +32,7 @@ import collections
 import itertools
 import StringIO
 import os
-sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'OmeroPychrm'))
+sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'OmeroWndcharm'))
 sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'scripts'))
 
 from ClassifierXml import *

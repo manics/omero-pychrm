@@ -31,13 +31,13 @@ else:
 import re
 import numpy as np
 
-from pychrm.FeatureSet import DiscreteBatchClassificationResult, \
+from wndcharm.FeatureSet import DiscreteBatchClassificationResult, \
     FeatureSet_Discrete, FisherFeatureWeights, Signatures
 
 
-class TestPychrm(unittest.TestCase):
+class TestWndcharm(unittest.TestCase):
     """
-    Test the pychrm module to check it still works with OmeroPychrm
+    Test the wndcharm module to check it still works with OmeroWndcharm
     """
 
     def setUp(self):
